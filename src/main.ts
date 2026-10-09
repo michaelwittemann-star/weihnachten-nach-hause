@@ -176,14 +176,12 @@ function render(): void {
 function renderSummary(all: Conn[], list: Conn[]): void {
   const fastest = (xs: Conn[]) => (xs.length ? fmtDur(Math.min(...xs.map((x) => x.totalMin))) : '–');
   const car = carDirectMin === undefined ? '…' : carDirectMin === null ? 'nicht ermittelbar' : fmtDur(carDirectMin);
-  const parts = [
-    `<span><b>${list.length}</b> Verbindungen</span>`,
-    `<span>Schnellste: <b>${fastest(all)}</b></span>`,
-    `<span>Schnellste mit D-Ticket: <b>${fastest(all.filter((x) => x.regionalOnly))}</b></span>`,
-    `<span>Nur Auto: <b>${car}</b></span>`,
-  ];
-  if (list.length) parts.push(`<span>min. Umstiege: <b>${Math.min(...list.map((x) => x.itin.transfers))}</b></span>`);
-  $('summary').innerHTML = parts.join('');
+  const stat = (label: string, value: string) => `<div class="stat"><span class="stat-label">${label}</span><b>${value}</b></div>`;
+  const meta = [`${list.length} Verbindungen`];
+  if (list.length) meta.push(`min. Umstiege: ${Math.min(...list.map((x) => x.itin.transfers))}`);
+  $('summary').innerHTML =
+    `<div class="stats">${stat('Schnellste', fastest(all))}${stat('Schnellste mit D-Ticket', fastest(all.filter((x) => x.regionalOnly)))}` +
+    `${stat('Nur Auto', car)}</div><div class="meta muted small">${meta.join(' · ')}</div>`;
 }
 
 /** Bahnhofstabellen je Seite, sortiert nach Autozeit; der eingegebene Ort steht immer oben. */
