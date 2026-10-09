@@ -251,6 +251,23 @@ function showStatus(text: string, frac: number, finished = false): void {
   $('cancel').hidden = finished;
 }
 
+/* ---------- Überschrift ---------- */
+
+/** Schriftgröße so wählen, dass Haus und Schriftzug die Breite des roten Balkens ausfüllen. */
+function fitLogo(): void {
+  const h = document.querySelector<HTMLElement>('h1.logo');
+  const inner = h?.querySelector<HTMLElement>('.logo-inner');
+  if (!h || !inner) return;
+  h.style.fontSize = '100px';
+  const cs = getComputedStyle(h);
+  const avail = h.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const used = inner.getBoundingClientRect().width;
+  if (used > 0) h.style.fontSize = `${Math.floor((100 * avail * 0.995) / used * 10) / 10}px`;
+}
+fitLogo();
+document.fonts?.ready.then(fitLogo);
+window.addEventListener('resize', fitLogo);
+
 /* ---------- Ereignisse ---------- */
 
 initForm(() => undefined);
