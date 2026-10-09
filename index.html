@@ -13,8 +13,8 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Nach Hause" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <script type="module" crossorigin src="./assets/index-DixnQl1I.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-B-FewyEm.css">
+  <script type="module" crossorigin src="./assets/index-Bd3N3RT-.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Bd4W4Lnb.css">
 </head>
 <body>
   <header class="top">
@@ -60,9 +60,16 @@
       </div>
 
       <div class="when">
-        <label>Datum <input name="date" type="date" required /></label>
-        <label>Abfahrt zwischen <input name="t0" type="time" value="06:00" required /></label>
-        <label>und <input name="t1" type="time" value="20:00" required /></label>
+        <select name="mode" aria-label="Zeitfenster gilt für Abfahrt oder Ankunft">
+          <option value="dep">Abfahrt</option>
+          <option value="arr">Ankunft</option>
+        </select>
+        <input name="date" type="date" required aria-label="Datum" />
+        <span class="range">
+          <input name="t0" type="time" value="06:00" required aria-label="frühestens" />
+          <span aria-hidden="true">–</span>
+          <input name="t1" type="time" value="20:00" required aria-label="spätestens" />
+        </span>
       </div>
 
       <details class="more">
