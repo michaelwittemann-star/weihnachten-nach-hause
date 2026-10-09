@@ -46,6 +46,15 @@ main, footer { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
   margin-bottom: 16px;
 }
 h1 { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+/* Überschrift als Wortmarke im Stil eines Bahn-Logos: rotes Feld, weiße fette Schrift */
+h1.logo {
+  display: inline-flex; align-items: center; gap: 0.45em;
+  background: var(--red); color: #fff;
+  border-radius: 6px; padding: 0.28em 0.7em 0.3em 0.55em;
+  font-size: 1.25rem; font-weight: 800; letter-spacing: 0.01em; line-height: 1.15;
+}
+.logo-mark { width: 1.15em; height: 1.5em; flex: none; }
+@media (max-width: 420px) { h1.logo { font-size: 1.05rem; } }
 h2 { margin: 0; font-size: 1.2rem; font-weight: 700; }
 h3 { margin: 0 0 6px; font-size: 0.85rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 h4 { margin: 12px 0 4px; font-size: 0.85rem; color: var(--muted); }
