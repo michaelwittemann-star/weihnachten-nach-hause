@@ -1,11 +1,11 @@
 import './style.css';
-import { carTimes } from './api/motis';
+import { accessTimes } from './api/motis';
 import { buildTasks, mergeOptions, runTask, windowBounds, type Task } from './core/search';
 import { byTotal, describeOptions, groupByMainTrip, sortConns, type Conn, type SortKey } from './core/options';
 import { probeSelect } from './core/probe';
 import { findCandidates, TIER_LABEL } from './core/stations';
 import type { Candidate, Option, SearchParams, SideKey } from './types';
-import { esc, fmtDur } from './ui/format';
+import { ACCESS_LABEL, esc, fmtDur } from './ui/format';
 import { initForm, readParams, resolvePlaces, swapSides, writeParams } from './ui/form';
 import { drawMap } from './ui/map';
 import { domId, renderResults } from './ui/results';
@@ -32,7 +32,7 @@ const sources = { efa: 0, transitous: 0 };
 
 /** Schlüssel der Einstellungen, die die Bahnhofsauswahl bestimmen. */
 const sideKey = (p: SearchParams) =>
-  JSON.stringify([p.from.place, p.from.radiusKm, p.from.maxStations, p.from.walk, p.from.car, p.to.place, p.to.radiusKm, p.to.maxStations, p.to.walk, p.to.car]);
+  JSON.stringify([p.from.place, p.from.radiusKm, p.from.maxStations, p.from.walk, p.from.bike, p.from.car, p.to.place, p.to.radiusKm, p.to.maxStations, p.to.walk, p.to.bike, p.to.car]);
 
 async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
   ctrl?.abort();
@@ -46,7 +46,7 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
     history.replaceState(null, '', paramsToUrl(p));
 
     if (!opts.keepCandidates || sideKey(p) !== candKey) {
-      showStatus('Bahnhöfe im Umkreis und Autozeiten werden ermittelt …', 0.02);
+      showStatus('Bahnhöfe im Umkreis und Fahrzeiten dorthin werden ermittelt …', 0.02);
       const [f, t] = await Promise.all([findCandidates('from', p.from, signal), findCandidates('to', p.to, signal)]);
       cands = { from: f, to: t };
       candKey = sideKey(p);
@@ -58,7 +58,7 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
         showStatus(`Bahnhöfe werden nach Fahrzeit verglichen: ${done} von ${total}`, 0.05 + 0.25 * (done / total)),
       );
       carDirectMin = undefined;
-      carTimes(p.from.place, [p.to.place], false, signal)
+      accessTimes(p.from.place, [p.to.place], false, 'CAR', signal)
         .then(([sec]) => {
           carDirectMin = sec == null ? null : sec / 60;
           render();
@@ -184,14 +184,14 @@ function renderSummary(all: Conn[], list: Conn[]): void {
     `${stat('Nur Auto', car)}</div><div class="meta muted small">${meta.join(' · ')}</div>`;
 }
 
-/** Bahnhofstabellen je Seite, sortiert nach Autozeit; der eingegebene Ort steht immer oben. */
+/** Bahnhofstabellen je Seite, sortiert nach Zubringerzeit; der eingegebene Ort steht immer oben. */
 function renderStationTables(best: Map<string, Conn>): void {
   const counts: string[] = [];
   for (const side of ['from', 'to'] as SideKey[]) {
     const list = cands[side];
     const rows = list
       .map((c, i) => ({ c, i }))
-      .sort((a, b) => Number(b.c.door) - Number(a.c.door) || a.c.carSec - b.c.carSec);
+      .sort((a, b) => Number(b.c.door) - Number(a.c.door) || a.c.accessSec - b.c.accessSec);
     const body = rows
       .map(({ c, i }) => {
         const b = best.get(`${side}:${c.id}`);
@@ -199,7 +199,7 @@ function renderStationTables(best: Map<string, Conn>): void {
           `<tr class="${c.selected ? 'on' : ''}"><td><input type="checkbox" class="st-check" data-side="${side}" data-i="${i}"` +
           `${c.selected ? ' checked' : ''} aria-label="${esc(c.name)} verwenden"></td>` +
           `<td>${esc(c.name)}</td><td class="muted">${c.door ? 'zu Fuß/Bus' : TIER_LABEL[c.tier]}</td>` +
-          `<td class="num">${c.door ? '–' : fmtDur(c.carSec / 60)}</td>` +
+          `<td class="num">${c.door ? '–' : `${fmtDur(c.accessSec / 60)} <span class="muted">${ACCESS_LABEL[c.access]}</span>`}</td>` +
           `<td class="num muted">${c.door ? '–' : `${c.distKm.toFixed(1).replace('.', ',')} km`}</td>` +
           `<td class="num">${
             b
@@ -212,12 +212,12 @@ function renderStationTables(best: Map<string, Conn>): void {
       })
       .join('');
     $(`st-${side}`).innerHTML =
-      '<thead><tr><th></th><th>Bahnhof</th><th>Art</th><th class="num">Auto</th><th class="num">Luftlinie</th>' +
+      '<thead><tr><th></th><th>Bahnhof</th><th>Art</th><th class="num">Hinkommen</th><th class="num">Luftlinie</th>' +
       `<th class="num">beste</th></tr></thead><tbody>${body}</tbody>`;
     const n = list.filter((c) => !c.door).length;
     const sel = list.filter((c) => !c.door && c.selected).length;
     const label = side === 'from' ? 'Start' : 'Ziel';
-    counts.push(params?.[side].car ? `${label}: ${sel} von ${n} gewählt` : `${label}: nur zu Fuß`);
+    counts.push(params?.[side].car || params?.[side].bike ? `${label}: ${sel} von ${n} gewählt` : `${label}: nur zu Fuß`);
   }
   $('st-count').textContent = `· ${counts.join(' · ')}`;
 }

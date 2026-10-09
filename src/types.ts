@@ -12,8 +12,12 @@ export interface SideParams {
   radiusKm: number;
   maxStations: number;
   walk: boolean; // Weg ab/bis Adresse zu Fuß (+ Bus/Tram)
+  bike: boolean; // Bahnhöfe im Umkreis per Fahrrad
   car: boolean; // Bahnhöfe im Umkreis per Auto
 }
+
+/** Wie man zwischen Adresse und Bahnhof kommt. */
+export type Access = 'walk' | 'bike' | 'car';
 
 export interface SearchParams {
   from: SideParams;
@@ -28,16 +32,17 @@ export interface SearchParams {
 
 /** Ein Bahnhof im Umkreis (oder die Adresse selbst, `door`). */
 export interface Candidate {
-  id: string; // stopId oder 'door'
+  id: string; // eindeutig: 'door' oder '<access>:<stopId>'
   name: string;
   lat: number;
   lon: number;
   tier: number; // 3 Fernverkehr, 2 Regional, 1 S-Bahn, 0 Adresse
   distKm: number;
-  carSec: number; // Autozeit Adresse <-> Bahnhof
+  access: Access; // Zubringer: Auto, Fahrrad oder (bei door) zu Fuß
+  accessSec: number; // Zubringerzeit Adresse <-> Bahnhof
   door: boolean;
   selected: boolean;
-  stopId?: string; // nur bei door: eingegebener Ort ist eine Haltestelle
+  stopId?: string; // Haltestellen-ID (bei door nur, wenn der eingegebene Ort eine Haltestelle ist)
   placeName: string; // oben eingegebener Start/Ziel-Name
   probeMin?: number; // schnellste Gesamtzeit aus der Probeabfrage
 }
@@ -64,14 +69,14 @@ export interface Itin {
   legs: Leg[];
 }
 
-/** Eine Tür-zu-Tür-Option: Auto + ÖPNV-Verbindung + Auto. */
+/** Eine Tür-zu-Tür-Option: Zubringer + ÖPNV-Verbindung + Zubringer. */
 export interface Option {
   key: string;
   o: Candidate;
   d: Candidate;
   itin: Itin;
-  carOutSec: number;
-  carInSec: number;
+  accessOutSec: number;
+  accessInSec: number;
   doorDep: number;
   doorArr: number;
   regionalOnly: boolean;

@@ -27,3 +27,14 @@ const MODE_LABEL: Record<string, string> = {
 };
 
 export const modeLabel = (m: string) => MODE_LABEL[m] ?? m;
+
+/** Zubringer: Beschriftung und CSS-Klasse (Farbe). */
+export const ACCESS_LABEL = { car: 'Auto', bike: 'Fahrrad', walk: 'zu Fuß' } as const;
+
+/** "Bahn/ÖPNV 1:10 h · Auto 12 min · Fahrrad 8 min" – nur vorhandene Teile. */
+export function splitText(transitMin: number, carMin: number, bikeMin: number): string {
+  const parts = [`Bahn/ÖPNV ${fmtDur(transitMin)}`];
+  if (carMin > 0) parts.push(`Auto ${fmtDur(carMin)}`);
+  if (bikeMin > 0) parts.push(`Fahrrad ${fmtDur(bikeMin)}`);
+  return parts.join(' · ');
+}

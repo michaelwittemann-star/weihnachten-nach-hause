@@ -1,6 +1,6 @@
 import { TIGHT_TRANSFER_MIN, transitLegs, type Conn } from '../core/options';
 import type { Leg } from '../types';
-import { esc, fmtDur, fmtTime, modeLabel } from './format';
+import { ACCESS_LABEL, esc, fmtDur, fmtTime, modeLabel, splitText } from './format';
 
 export const domId = (key: string) => 'opt-' + key.replace(/[^a-zA-Z0-9]/g, '_');
 
@@ -30,8 +30,8 @@ function item(s: Conn): string {
   const tl = transitLegs(s.itin.legs);
   const lines = tl.map((l) => esc(l.line || modeLabel(l.mode))).join(' → ');
   const pct = (m: number) => `${Math.max(0, (m / s.totalMin) * 100)}%`;
-  const outMin = s.carOutSec / 60;
-  const inMin = s.carInSec / 60;
+  const outMin = s.accessOutSec / 60;
+  const inMin = s.accessInSec / 60;
   const warn: string[] = [];
   if (s.tight) warn.push(`<span class="badge warn" title="Umstieg kürzer als ${TIGHT_TRANSFER_MIN} min">⚠ knapper Umstieg${s.minGapMin !== null ? ` (${Math.round(s.minGapMin)} min)` : ''}</span>`);
   if (s.itin.legs.some((l) => l.cancelled)) warn.push('<span class="badge bad">✕ Fahrt fällt aus</span>');
@@ -40,8 +40,8 @@ function item(s: Conn): string {
   if (s.regionalOnly) warn.push('<span class="badge ok" title="nur Nahverkehr">D-Ticket</span>');
 
   const where = [
-    s.o.door ? `<b>${esc(s.o.name)}</b>` : `<b>${esc(s.o.name)}</b>${outMin ? ` <span class="muted">(${fmtDur(outMin)} Auto)</span>` : ''}`,
-    s.d.door ? `<b>${esc(s.d.name)}</b>` : `<b>${esc(s.d.name)}</b>${inMin ? ` <span class="muted">(${fmtDur(inMin)} Auto)</span>` : ''}`,
+    s.o.door ? `<b>${esc(s.o.name)}</b>` : `<b>${esc(s.o.name)}</b>${outMin ? ` <span class="muted">(${fmtDur(outMin)} ${ACCESS_LABEL[s.o.access]})</span>` : ''}`,
+    s.d.door ? `<b>${esc(s.d.name)}</b>` : `<b>${esc(s.d.name)}</b>${inMin ? ` <span class="muted">(${fmtDur(inMin)} ${ACCESS_LABEL[s.d.access]})</span>` : ''}`,
   ].join(' → ');
 
   return `<li id="${domId(s.key)}" class="opt" data-key="${esc(s.key)}">
@@ -51,12 +51,12 @@ function item(s: Conn): string {
         <div class="times"><span class="big">${fmtTime(s.doorDep)} – ${fmtTime(s.doorArr)}</span>
           <span class="muted">${fmtDur(s.totalMin)} · ${s.itin.transfers} Umst.</span></div>
         <div class="where">${where}</div>
-        <div class="split" aria-label="Aufteilung Auto/Bahn">
-          ${outMin ? `<span class="car" style="width:${pct(outMin)}"></span>` : ''}
+        <div class="split" aria-label="Aufteilung Zubringer/Bahn">
+          ${outMin ? `<span class="${s.o.access}" style="width:${pct(outMin)}"></span>` : ''}
           <span class="rail" style="width:${pct(s.transitMin)}"></span>
-          ${inMin ? `<span class="car" style="width:${pct(inMin)}"></span>` : ''}
+          ${inMin ? `<span class="${s.d.access}" style="width:${pct(inMin)}"></span>` : ''}
         </div>
-        <div class="split-legend muted small">Bahn/ÖPNV ${fmtDur(s.transitMin)} · Auto ${fmtDur(s.carMin)}</div>
+        <div class="split-legend muted small">${splitText(s.transitMin, s.carMin, s.bikeMin)}</div>
         <div class="lines">${lines} ${warn.join(' ')}</div>
       </div>
     </summary>
@@ -67,10 +67,10 @@ function item(s: Conn): string {
 
 function legsHtml(s: Conn): string {
   const rows: string[] = [];
-  if (s.carOutSec > 0)
-    rows.push(row(s.doorDep, s.itin.dep, 'car', 'Auto', `von ${s.o.placeName} zu ${s.itin.legs[0].from}`, ''));
+  if (s.accessOutSec > 0)
+    rows.push(row(s.doorDep, s.itin.dep, s.o.access, ACCESS_LABEL[s.o.access], `von ${s.o.placeName} zu ${s.itin.legs[0].from}`, ''));
   for (const l of s.itin.legs) rows.push(legRow(l));
-  if (s.carInSec > 0) rows.push(row(s.itin.arr, s.doorArr, 'car', 'Auto', `von ${s.itin.legs[s.itin.legs.length - 1].to} nach ${s.d.placeName}`, ''));
+  if (s.accessInSec > 0) rows.push(row(s.itin.arr, s.doorArr, s.d.access, ACCESS_LABEL[s.d.access], `von ${s.itin.legs[s.itin.legs.length - 1].to} nach ${s.d.placeName}`, ''));
   const src = s.source === 'efa' ? 'EFA-BW (Landesauskunft Baden-Württemberg)' : 'Transitous (Ersatzquelle, Umstiegswege evtl. zu knapp)';
   return `<table class="legtable"><tbody>${rows.join('')}</tbody></table><p class="muted small src">Quelle: ${src}</p>`;
 }

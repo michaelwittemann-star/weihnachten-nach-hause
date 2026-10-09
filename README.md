@@ -1,7 +1,7 @@
 # Weihnachten-nach-Hause-App
 
 Statische Website: Bahnverbindungen von/zu **allen Bahnhöfen im Umkreis** einer Adresse über ein ganzes
-Zeitfenster, inklusive Autozeit zum Bahnhof (Abholung, Carsharing). Aufteilung Bahn-/Autozeit,
+Zeitfenster, inklusive Weg zum Bahnhof zu Fuß, mit dem Fahrrad oder Auto (Abholung, Carsharing). Aufteilung Bahn-/Autozeit,
 D-Ticket-Modus, Karte, Tages-Zeitstrahl, teilbarer Link.
 
 Live: https://michaelwittemann-star.github.io/weihnachten-nach-hause/

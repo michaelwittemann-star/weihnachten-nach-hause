@@ -1,4 +1,4 @@
-import { carTimes, stopsInBox, type RawStop } from '../api/motis';
+import { accessTimes, stopsInBox, type RawStop } from '../api/motis';
 import type { Candidate, Place, SideKey, SideParams } from '../types';
 
 export function distKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
@@ -19,7 +19,7 @@ function tierOf(modes: string[] = []): number {
 
 export const TIER_LABEL: Record<number, string> = { 3: 'Fernverkehr', 2: 'Regionalverkehr', 1: 'S-/U-Bahn', 0: 'Adresse' };
 
-/** Je Fernverkehrs-Stufe gilt ein Bahnhof als so viele Autominuten "näher". */
+/** Je Fernverkehrs-Stufe gilt ein Bahnhof als so viele Zubringerminuten "näher". */
 const TIER_BONUS_MIN = 8;
 /** Mindestabstand zwischen vorausgewählten Bahnhöfen derselben oder niedrigeren Stufe. */
 const SPREAD_KM = 3;
@@ -34,7 +34,8 @@ export function doorCandidate(place: Place): Candidate {
     lon: place.lon,
     tier: 0,
     distKm: 0,
-    carSec: 0,
+    access: 'walk',
+    accessSec: 0,
     door: true,
     selected: true,
     stopId: place.stopId,
@@ -43,13 +44,13 @@ export function doorCandidate(place: Place): Candidate {
 }
 
 /**
- * Alle Bahnhöfe im Umkreis mit Autozeit. Die besten `maxStations` (Autozeit minus
- * Bonus für Fern-/Regionalverkehr) sind vorausgewählt, der Rest kann zugeschaltet werden.
+ * Alle Bahnhöfe im Umkreis mit Zubringerzeit – je gewähltem Fahrzeug (Auto, Fahrrad) ein Eintrag.
+ * Die besten `maxStations` (Zubringerzeit minus Bonus für Fern-/Regionalverkehr) sind vorausgewählt.
  */
 export async function findCandidates(side: SideKey, p: SideParams, signal?: AbortSignal): Promise<Candidate[]> {
   const door = doorCandidate(p.place);
   const base = p.walk ? [door] : [];
-  if (!p.car || p.radiusKm <= 0) return base;
+  if ((!p.car && !p.bike) || p.radiusKm <= 0) return base;
 
   const r = p.radiusKm;
   const dLat = r / 111;
@@ -71,30 +72,35 @@ export async function findCandidates(side: SideKey, p: SideParams, signal?: Abor
   const pool = kept.slice(0, 60);
   if (pool.length === 0) return base;
 
-  const times = await carTimes(p.place, pool.map((x) => x.s), side === 'to', signal);
   const cands: Candidate[] = [];
-  pool.forEach((x, i) => {
-    const sec = times[i];
-    if (sec == null) return;
-    cands.push({
-      id: x.s.stopId,
-      name: x.s.name,
-      lat: x.s.lat,
-      lon: x.s.lon,
-      tier: x.tier,
-      distKm: x.d,
-      carSec: sec,
-      door: false,
-      selected: false,
-      placeName: p.place.name,
+  const vehicles = [...(p.car ? (['car'] as const) : []), ...(p.bike ? (['bike'] as const) : [])];
+  for (const access of vehicles) {
+    const times = await accessTimes(p.place, pool.map((x) => x.s), side === 'to', access === 'car' ? 'CAR' : 'BIKE', signal);
+    pool.forEach((x, i) => {
+      const sec = times[i];
+      if (sec == null) return;
+      cands.push({
+        id: `${access}:${x.s.stopId}`,
+        stopId: x.s.stopId,
+        name: x.s.name,
+        lat: x.s.lat,
+        lon: x.s.lon,
+        tier: x.tier,
+        distKm: x.d,
+        access,
+        accessSec: sec,
+        door: false,
+        selected: false,
+        placeName: p.place.name,
+      });
     });
-  });
+  }
   cands.sort((a, b) => rankMin(a) - rankMin(b));
   // Vorauswahl räumlich streuen: kein Halt direkt neben einem schon gewählten, gleichwertigen.
   // Nahe Bahnhöfe (< NEAR_KM) kommen immer dazu und zählen nicht gegen maxStations.
   const picked: Candidate[] = [];
   const pick = (c: Candidate) => {
-    if (c.selected || picked.some((q) => q.tier >= c.tier && distKm(q, c) < SPREAD_KM)) return false;
+    if (c.selected || picked.some((q) => q.access === c.access && q.tier >= c.tier && distKm(q, c) < SPREAD_KM)) return false;
     c.selected = true;
     picked.push(c);
     return true;
@@ -108,8 +114,8 @@ export async function findCandidates(side: SideKey, p: SideParams, signal?: Abor
   return [...base, ...cands];
 }
 
-/** Grobe Rangfolge ohne Fahrplan: Autozeit minus Bonus je Verkehrsstufe. */
-export const rankMin = (c: Candidate) => c.carSec / 60 - TIER_BONUS_MIN * c.tier;
+/** Grobe Rangfolge ohne Fahrplan: Zubringerzeit minus Bonus je Verkehrsstufe. */
+export const rankMin = (c: Candidate) => c.accessSec / 60 - TIER_BONUS_MIN * c.tier;
 
 function normName(n: string): string {
   return n.toLowerCase().replace(/\(.*?\)|bahnhof|bf\.?|hbf\.?|hauptbahnhof|[^a-zäöüß]/g, '');

@@ -25,7 +25,7 @@ export function buildTasks(p: SearchParams, from: Candidate[], to: Candidate[]):
   return tasks;
 }
 
-const placeOf = (c: Candidate) => (c.door ? c.stopId ?? `${c.lat},${c.lon}` : c.id);
+const placeOf = (c: Candidate) => c.stopId ?? `${c.lat},${c.lon}`;
 
 const MAX_EFA_PAGES = 8;
 
@@ -37,8 +37,8 @@ export type Source = 'efa' | 'transitous';
  */
 export async function runTask(task: Task, p: SearchParams, signal: AbortSignal): Promise<{ options: Option[]; source: Source }> {
   const { start, end } = windowBounds(p);
-  // Bahnteil: bei Abfahrt ab Bahnhof (Fenster + Autozeit davor), bei Ankunft am Bahnhof (Fenster − Autozeit danach)
-  const shift = p.arrive ? -task.d.carSec * 1000 : task.o.carSec * 1000;
+  // Bahnteil: bei Abfahrt ab Bahnhof (Fenster + Zubringer davor), bei Ankunft am Bahnhof (Fenster − Zubringer danach)
+  const shift = p.arrive ? -task.d.accessSec * 1000 : task.o.accessSec * 1000;
   const t0 = start + shift;
   const t1 = end + shift;
   try {
@@ -121,8 +121,8 @@ function minGap(it: Itin): number {
 }
 
 /**
- * Fußwege direkt vor bzw. nach der Autofahrt entfallen: Abgeholt wird an der Haltestelle,
- * an der man tatsächlich aussteigt (die Autozeit des gewählten Halts gilt näherungsweise weiter).
+ * Fußwege direkt vor bzw. nach Auto/Fahrrad entfallen: Abgeholt bzw. abgestellt wird an der Haltestelle,
+ * an der man tatsächlich aussteigt (die Zubringerzeit des gewählten Halts gilt näherungsweise weiter).
  */
 function trimWalksAtCar(it: Itin, carBefore: boolean, carAfter: boolean): Itin {
   let first = 0;
@@ -139,9 +139,9 @@ function toOptions(task: Task, itins: Itin[], start: number, end: number, arrive
   const out: Option[] = [];
   for (const raw of itins) {
     if (!raw.legs.some((l) => l.mode !== 'WALK')) continue; // reine Fußwege
-    const itin = trimWalksAtCar(raw, o.carSec > 0, d.carSec > 0);
-    const doorDep = itin.dep - o.carSec * 1000;
-    const doorArr = itin.arr + d.carSec * 1000;
+    const itin = trimWalksAtCar(raw, !o.door, !d.door);
+    const doorDep = itin.dep - o.accessSec * 1000;
+    const doorArr = itin.arr + d.accessSec * 1000;
     const t = arrive ? doorArr : doorDep; // das Fenster gilt für Abfahrt bzw. Ankunft
     if (t < start || t > end) continue;
     out.push({
@@ -149,8 +149,8 @@ function toOptions(task: Task, itins: Itin[], start: number, end: number, arrive
       o,
       d,
       itin,
-      carOutSec: o.carSec,
-      carInSec: d.carSec,
+      accessOutSec: o.accessSec,
+      accessInSec: d.accessSec,
       doorDep,
       doorArr,
       regionalOnly: regional || itin.legs.every((l) => !isLongDistance(l.mode)),

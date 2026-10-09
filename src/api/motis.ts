@@ -52,27 +52,27 @@ export async function stopsInBox(
   return slim;
 }
 
-/* ---------- Autozeiten ---------- */
+/* ---------- Zubringerzeiten (Auto/Fahrrad) ---------- */
 
 /**
- * Autozeit in Sekunden zwischen `one` und jedem Punkt aus `many`.
+ * Fahrzeit in Sekunden zwischen `one` und jedem Punkt aus `many`, mit Auto oder Fahrrad.
  * `toOne=true`: Fahrt von den Punkten zu `one` (Abholung am Ziel).
  * Nicht erreichbare Punkte liefern null.
  */
-export async function carTimes(
-  one: Place, many: { lat: number; lon: number }[], toOne: boolean, signal?: AbortSignal,
+export async function accessTimes(
+  one: Place, many: { lat: number; lon: number }[], toOne: boolean, mode: 'CAR' | 'BIKE', signal?: AbortSignal,
 ): Promise<(number | null)[]> {
   const out: (number | null)[] = [];
   for (let i = 0; i < many.length; i += 50) {
     const chunk = many.slice(i, i + 50);
-    const key = `car:${toOne ? 1 : 0}:${one.lat.toFixed(5)},${one.lon.toFixed(5)}:` +
+    const key = `${mode === 'CAR' ? 'car' : 'bike'}:${toOne ? 1 : 0}:${one.lat.toFixed(5)},${one.lon.toFixed(5)}:` +
       chunk.map((p) => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`).join(';');
     let res = cacheGet<(number | null)[]>(key);
     if (!res) {
       const raw = await getJson<{ duration?: number }[]>('/api/v1/one-to-many', {
         one: `${one.lat};${one.lon}`,
         many: chunk.map((p) => `${p.lat};${p.lon}`).join(','),
-        mode: 'CAR',
+        mode,
         max: '7200',
         maxMatchingDistance: '400',
         arriveBy: String(toOne),

@@ -17,6 +17,7 @@
   --rail: #ec0016;
   --car: #1455c0;
   --walk: #008a7e;
+  --bike: #c29200;
   --wait: #afb4bb;
   --warn-bg: #fff4d8;
   --warn-ink: #7a5800;
@@ -193,6 +194,7 @@ button.primary:hover { background: var(--red-hover); border-color: var(--red-hov
 .sw.car { background: var(--car); }
 .sw.rail { background: var(--rail); }
 .sw.walk { background: var(--walk); }
+.sw.bike { background: var(--bike); }
 .sw.waitsw { height: 2px; background: var(--wait); }
 .tl { display: block; max-width: 100%; }
 .tl .grid { stroke: var(--border); stroke-width: 1; }
@@ -202,6 +204,7 @@ button.primary:hover { background: var(--red-hover); border-color: var(--red-hov
 .tl .car { fill: var(--car); }
 .tl .rail { fill: var(--rail); }
 .tl .walk { fill: var(--walk); }
+.tl .bike { fill: var(--bike); }
 .tl .hit { fill: transparent; }
 .tl .row { cursor: pointer; }
 .tl .row.hover .hit { fill: var(--surface-2); }
@@ -234,6 +237,7 @@ button.primary:hover { background: var(--red-hover); border-color: var(--red-hov
 .split span { border-radius: 3px; min-width: 2px; }
 .split .car { background: var(--car); }
 .split .rail { background: var(--rail); }
+.split .bike { background: var(--bike); }
 .badge { font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
 .badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
 .badge.bad { background: var(--bad-bg); color: var(--bad-ink); }

@@ -1,5 +1,5 @@
 import type { Conn } from '../core/options';
-import { esc, fmtDur, fmtTime } from './format';
+import { esc, fmtDur, fmtTime, splitText } from './format';
 
 const ROW_H = 12;
 const ROW_GAP = 6;
@@ -43,12 +43,12 @@ export function drawTimeline(host: HTMLElement, list: Conn[], winStart: number, 
       const w = Math.max(2, x(b) - x(a) - 2); // 2px Abstand zwischen Abschnitten
       segs.push(`<rect class="${cls}" x="${x(a) + 1}" y="${y}" width="${w}" height="${ROW_H}" rx="3"/>`);
     };
-    if (r.carOutSec > 0) seg(r.doorDep, r.itin.dep, 'car');
+    if (r.accessOutSec > 0) seg(r.doorDep, r.itin.dep, r.o.access);
     for (const l of r.itin.legs) seg(l.dep, l.arr, l.mode === 'WALK' ? 'walk' : 'rail');
-    if (r.carInSec > 0) seg(r.itin.arr, r.doorArr, 'car');
+    if (r.accessInSec > 0) seg(r.itin.arr, r.doorArr, r.d.access);
     const tip = esc(
       `${fmtTime(r.doorDep)}–${fmtTime(r.doorArr)} · ${fmtDur(r.totalMin)} · ${r.itin.transfers} Umst.\n` +
-        `${r.o.name} → ${r.d.name}\nBahn ${fmtDur(r.transitMin)} · Auto ${fmtDur(r.carMin)}`,
+        `${r.o.name} → ${r.d.name}\n${splitText(r.transitMin, r.carMin, r.bikeMin)}`,
     );
     parts.push(
       `<g class="row" data-key="${esc(r.key)}" data-tip="${tip}">` +
@@ -59,7 +59,7 @@ export function drawTimeline(host: HTMLElement, list: Conn[], winStart: number, 
   });
 
   host.innerHTML =
-    `<div class="legend"><span><i class="sw car"></i>Auto</span><span><i class="sw rail"></i>Bahn/ÖPNV</span>` +
+    `<div class="legend"><span><i class="sw car"></i>Auto</span><span><i class="sw bike"></i>Fahrrad</span><span><i class="sw rail"></i>Bahn/ÖPNV</span>` +
     `<span><i class="sw walk"></i>Fußweg</span><span><i class="sw waitsw"></i>Warten</span>` +
     (list.length > MAX_ROWS ? `<span class="muted">erste ${MAX_ROWS} von ${list.length}</span>` : '') +
     `</div><svg class="tl" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" ` +

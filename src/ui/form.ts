@@ -16,7 +16,7 @@ export function initForm(onChange: () => void): void {
   el('date').value = isoDate(today);
   (['from', 'to'] as SideKey[]).forEach((side) => {
     initAutocomplete(side, onChange);
-    for (const m of ['walk', 'car']) el(`${side}-${m}`).addEventListener('change', () => syncAccess(side));
+    for (const m of ['walk', 'bike', 'car']) el(`${side}-${m}`).addEventListener('change', () => syncAccess(side));
     syncAccess(side);
   });
   form.addEventListener('input', onChange);
@@ -87,13 +87,13 @@ function initAutocomplete(side: SideKey, onChange: () => void): void {
   input.addEventListener('blur', () => setTimeout(close, 150));
 }
 
-/** Umkreis-Felder nur mit Auto aktiv; mindestens ein Zugangsweg muss gewählt sein. */
+/** Umkreis nur mit Auto oder Fahrrad aktiv; mindestens ein Zugangsweg muss gewählt sein. */
 function syncAccess(side: SideKey): void {
   const walk = el(`${side}-walk`);
-  const car = el(`${side}-car`);
-  el(`${side}-r`).disabled = !car.checked;
-  walk.closest('.side')!.classList.toggle('no-car', !car.checked);
-  walk.setCustomValidity(walk.checked || car.checked ? '' : 'Bitte „zu Fuß“ oder „Auto“ wählen');
+  const vehicle = el(`${side}-car`).checked || el(`${side}-bike`).checked;
+  el(`${side}-r`).disabled = !vehicle;
+  walk.closest('.side')!.classList.toggle('no-car', !vehicle);
+  walk.setCustomValidity(walk.checked || vehicle ? '' : 'Bitte „zu Fuß“, „Fahrrad“ oder „Auto“ wählen');
 }
 
 /** Falls der Nutzer nichts aus der Liste gewählt hat: ersten Treffer nehmen. */
@@ -118,6 +118,7 @@ function readSide(side: SideKey): SideParams {
     radiusKm: Number(el(`${side}-r`).value) || 0,
     maxStations: MAX_STATIONS,
     walk: el(`${side}-walk`).checked,
+    bike: el(`${side}-bike`).checked,
     car: el(`${side}-car`).checked,
   };
 }
@@ -140,6 +141,7 @@ function writeSide(side: SideKey, s: SideParams): void {
   el(`${side}-q`).value = s.place.name;
   el(`${side}-r`).value = String(s.radiusKm);
   el(`${side}-walk`).checked = s.walk;
+  el(`${side}-bike`).checked = s.bike;
   el(`${side}-car`).checked = s.car;
   syncAccess(side);
 }

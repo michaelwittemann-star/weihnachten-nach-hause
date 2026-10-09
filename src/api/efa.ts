@@ -42,11 +42,10 @@ export class EfaUnsupported extends Error {}
 
 /** Haltestelle → deutsche Haltestellen-ID (DHID, steckt in der Transitous-ID); Adresse → Koordinate. */
 function efaPlace(c: Candidate): { type: string; name: string } {
-  const id = c.door ? c.stopId : c.id;
-  const dhid = id && /(de:\d{5}:\d+)/.exec(id)?.[1];
+  const dhid = c.stopId && /(de:\d{5}:\d+)/.exec(c.stopId)?.[1];
   if (dhid) return { type: 'stop', name: dhid };
   if (c.door) return { type: 'coord', name: `${c.lon.toFixed(6)}:${c.lat.toFixed(6)}:WGS84[dd.ddddd]` };
-  throw new EfaUnsupported(`keine deutsche Haltestellen-ID: ${c.id}`);
+  throw new EfaUnsupported(`keine deutsche Haltestellen-ID: ${c.stopId}`);
 }
 
 const LONG_DISTANCE_TYPES = new Set(['ICE', 'IC', 'EC', 'ECE', 'RJ', 'RJX', 'NJ', 'EN', 'TGV', 'FLX', 'D', 'THA']);

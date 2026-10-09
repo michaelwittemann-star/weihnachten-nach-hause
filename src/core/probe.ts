@@ -24,7 +24,7 @@ export async function probeSelect(
 
   const jobs: { side: SideKey; c: Candidate; o: Candidate; d: Candidate }[] = [];
   for (const side of ['from', 'to'] as SideKey[]) {
-    if (!p[side].car) continue;
+    if (!p[side].car && !p[side].bike) continue;
     const other = ref(side === 'from' ? 'to' : 'from');
     if (!other) continue;
     const stations = cands[side].filter((c) => !c.door);
@@ -41,9 +41,9 @@ export async function probeSelect(
     while (next < jobs.length && !signal.aborted) {
       const j = jobs[next++];
       try {
-        const time = p.arrive ? end - j.d.carSec * 1000 : start + j.o.carSec * 1000;
+        const time = p.arrive ? end - j.d.accessSec * 1000 : start + j.o.accessSec * 1000;
         const itins = await efaTrips({ from: j.o, to: j.d, time, regional: p.dticket, arrive: p.arrive, signal });
-        const car = (j.o.carSec + j.d.carSec) / 60;
+        const car = (j.o.accessSec + j.d.accessSec) / 60;
         const best = Math.min(...itins.map((it) => (it.arr - it.dep) / 60000));
         if (Number.isFinite(best)) score.set(j.c, best + car);
       } catch (e) {

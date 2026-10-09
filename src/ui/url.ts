@@ -1,7 +1,7 @@
 import type { SearchParams, SideParams } from '../types';
 
 const sideOut = (s: SideParams) =>
-  [s.place.lat.toFixed(5), s.place.lon.toFixed(5), s.radiusKm, s.maxStations, (s.walk ? 'f' : '') + (s.car ? 'a' : ''), s.place.stopId ?? '', s.place.name].join('~');
+  [s.place.lat.toFixed(5), s.place.lon.toFixed(5), s.radiusKm, s.maxStations, (s.walk ? 'f' : '') + (s.bike ? 'r' : '') + (s.car ? 'a' : ''), s.place.stopId ?? '', s.place.name].join('~');
 
 function sideIn(v: string | null): SideParams | null {
   if (!v) return null;
@@ -13,7 +13,8 @@ function sideIn(v: string | null): SideParams | null {
     radiusKm: Number(r) || 0,
     maxStations: Number(n) || 10,
     walk: access.includes('f'),
-    car: access.includes('a') || !access.includes('f'),
+    bike: access.includes('r'),
+    car: access.includes('a') || !/[fr]/.test(access),
   };
 }
 

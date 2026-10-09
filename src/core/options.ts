@@ -7,7 +7,9 @@ export const TIGHT_TRANSFER_MIN = 6;
 export interface Conn extends Option {
   totalMin: number; // echte Tür-zu-Tür-Zeit
   transitMin: number; // ÖPNV-Teil inkl. Fußwegen und Umstiegen
-  carMin: number; // Autominuten (beide Seiten)
+  accessMin: number; // Zubringerminuten (Auto + Fahrrad, beide Seiten)
+  carMin: number; // davon Auto
+  bikeMin: number; // davon Fahrrad
   tight: number; // Anzahl knapper Umstiege
   minGapMin: number | null; // kürzester Umstieg
 }
@@ -28,16 +30,18 @@ export function describeOptions(opts: Option[]): Conn[] {
       ...o,
       totalMin: (o.doorArr - o.doorDep) / 60000,
       transitMin: (o.itin.arr - o.itin.dep) / 60000,
-      carMin: (o.carOutSec + o.carInSec) / 60,
+      accessMin: (o.accessOutSec + o.accessInSec) / 60,
+      carMin: ((o.o.access === 'car' ? o.accessOutSec : 0) + (o.d.access === 'car' ? o.accessInSec : 0)) / 60,
+      bikeMin: ((o.o.access === 'bike' ? o.accessOutSec : 0) + (o.d.access === 'bike' ? o.accessInSec : 0)) / 60,
       tight,
       minGapMin: minGap,
     };
   });
 }
 
-/** Vergleich "besser": kürzer, dann weniger Umstiege, dann weniger Auto. */
+/** Vergleich "besser": kürzer, dann weniger Umstiege, dann weniger Zubringer. */
 export const byTotal = (a: Conn, b: Conn) =>
-  a.totalMin - b.totalMin || a.itin.transfers - b.itin.transfers || a.carMin - b.carMin;
+  a.totalMin - b.totalMin || a.itin.transfers - b.itin.transfers || a.accessMin - b.accessMin;
 
 /**
  * Fasst Verbindungen zusammen, die mit demselben Hauptzug fahren (z. B. ein RE, der mehrere
