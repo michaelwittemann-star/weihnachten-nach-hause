@@ -28,6 +28,7 @@ export interface SearchParams {
   dticket: boolean;
   arrive: boolean; // Zeitfenster gilt für die Ankunft statt die Abfahrt
   minTransfer: number;
+  bikeKmh: number; // angenommenes Fahrradtempo
 }
 
 /** Ein Bahnhof im Umkreis (oder die Adresse selbst, `door`). */

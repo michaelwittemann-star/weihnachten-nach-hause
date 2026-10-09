@@ -54,30 +54,36 @@ export async function stopsInBox(
 
 /* ---------- Zubringerzeiten (Auto/Fahrrad) ---------- */
 
+export interface AccessTime {
+  sec: number; // Fahrzeit laut Transitous (Fahrrad: ca. 14,5 km/h)
+  m: number | null; // Strecke in Metern, falls geliefert
+}
+
 /**
- * Fahrzeit in Sekunden zwischen `one` und jedem Punkt aus `many`, mit Auto oder Fahrrad.
+ * Fahrzeit und Strecke zwischen `one` und jedem Punkt aus `many`, mit Auto oder Fahrrad.
  * `toOne=true`: Fahrt von den Punkten zu `one` (Abholung am Ziel).
  * Nicht erreichbare Punkte liefern null.
  */
 export async function accessTimes(
   one: Place, many: { lat: number; lon: number }[], toOne: boolean, mode: 'CAR' | 'BIKE', signal?: AbortSignal,
-): Promise<(number | null)[]> {
-  const out: (number | null)[] = [];
+): Promise<(AccessTime | null)[]> {
+  const out: (AccessTime | null)[] = [];
   for (let i = 0; i < many.length; i += 50) {
     const chunk = many.slice(i, i + 50);
-    const key = `${mode === 'CAR' ? 'car' : 'bike'}:${toOne ? 1 : 0}:${one.lat.toFixed(5)},${one.lon.toFixed(5)}:` +
+    const key = `${mode === 'CAR' ? 'car' : 'bike'}2:${toOne ? 1 : 0}:${one.lat.toFixed(5)},${one.lon.toFixed(5)}:` +
       chunk.map((p) => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`).join(';');
-    let res = cacheGet<(number | null)[]>(key);
+    let res = cacheGet<(AccessTime | null)[]>(key);
     if (!res) {
-      const raw = await getJson<{ duration?: number }[]>('/api/v1/one-to-many', {
+      const raw = await getJson<{ duration?: number; distance?: number }[]>('/api/v1/one-to-many', {
         one: `${one.lat};${one.lon}`,
         many: chunk.map((p) => `${p.lat};${p.lon}`).join(','),
         mode,
         max: '7200',
         maxMatchingDistance: '400',
         arriveBy: String(toOne),
+        withDistance: 'true',
       }, signal);
-      res = raw.map((r) => (typeof r.duration === 'number' ? r.duration : null));
+      res = raw.map((r) => (typeof r.duration === 'number' ? { sec: r.duration, m: typeof r.distance === 'number' ? r.distance : null } : null));
       cacheSet(key, res);
     }
     out.push(...res);

@@ -1,4 +1,4 @@
-import { accessTimes, stopsInBox, type RawStop } from '../api/motis';
+import { accessTimes, stopsInBox, type AccessTime, type RawStop } from '../api/motis';
 import type { Candidate, Place, SideKey, SideParams } from '../types';
 
 export function distKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
@@ -47,7 +47,7 @@ export function doorCandidate(place: Place): Candidate {
  * Alle Bahnhöfe im Umkreis mit Zubringerzeit – je gewähltem Fahrzeug (Auto, Fahrrad) ein Eintrag.
  * Die besten `maxStations` (Zubringerzeit minus Bonus für Fern-/Regionalverkehr) sind vorausgewählt.
  */
-export async function findCandidates(side: SideKey, p: SideParams, signal?: AbortSignal): Promise<Candidate[]> {
+export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: number, signal?: AbortSignal): Promise<Candidate[]> {
   const door = doorCandidate(p.place);
   const base = p.walk ? [door] : [];
   if ((!p.car && !p.bike) || p.radiusKm <= 0) return base;
@@ -77,8 +77,9 @@ export async function findCandidates(side: SideKey, p: SideParams, signal?: Abor
   for (const access of vehicles) {
     const times = await accessTimes(p.place, pool.map((x) => x.s), side === 'to', access === 'car' ? 'CAR' : 'BIKE', signal);
     pool.forEach((x, i) => {
-      const sec = times[i];
-      if (sec == null) return;
+      const t = times[i];
+      if (t == null) return;
+      const sec = access === 'bike' ? bikeSeconds(t, bikeKmh) : t.sec;
       cands.push({
         id: `${access}:${x.s.stopId}`,
         stopId: x.s.stopId,
@@ -112,6 +113,12 @@ export async function findCandidates(side: SideKey, p: SideParams, signal?: Abor
     if (c.distKm >= NEAR_KM && pick(c)) far++;
   }
   return [...base, ...cands];
+}
+
+/** Transitous rechnet Fahrrad mit ca. 14,5 km/h; wir rechnen mit dem gewählten Tempo über die Strecke. */
+const TRANSITOUS_BIKE_KMH = 14.5;
+function bikeSeconds(t: AccessTime, kmh: number): number {
+  return t.m != null ? t.m / (kmh / 3.6) : (t.sec * TRANSITOUS_BIKE_KMH) / kmh;
 }
 
 /** Grobe Rangfolge ohne Fahrplan: Zubringerzeit minus Bonus je Verkehrsstufe. */

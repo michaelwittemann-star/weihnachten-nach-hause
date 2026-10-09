@@ -77,6 +77,14 @@
         <div class="opts">
           <label class="check"><input name="dt" type="checkbox" /> nur Nahverkehr (Deutschlandticket)</label>
           <label>Mindestumstiegszeit <input name="mt" type="number" min="0" max="30" value="0" /> min</label>
+          <label>Fahrradtempo
+            <select name="bk">
+              <option value="15">gemütlich (15 km/h)</option>
+              <option value="18" selected>normal (18 km/h)</option>
+              <option value="22">sportlich (22 km/h)</option>
+              <option value="25">E-Bike (25 km/h)</option>
+            </select>
+          </label>
         </div>
       </details>
 

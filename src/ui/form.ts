@@ -139,6 +139,7 @@ export function readParams(): SearchParams {
     dticket: el('dt').checked,
     arrive: el<HTMLSelectElement>('mode').value === 'arr',
     minTransfer: Number(el('mt').value) || 0,
+    bikeKmh: Number(el<HTMLSelectElement>('bk').value) || 18,
   };
 }
 
@@ -161,6 +162,7 @@ export function writeParams(p: SearchParams): void {
   el('dt').checked = p.dticket;
   el<HTMLSelectElement>('mode').value = p.arrive ? 'arr' : 'dep';
   el('mt').value = String(p.minTransfer);
+  el<HTMLSelectElement>('bk').value = String(p.bikeKmh);
 }
 
 /** Start und Ziel samt Umkreis-Einstellungen tauschen. */

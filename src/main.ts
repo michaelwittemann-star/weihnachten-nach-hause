@@ -32,7 +32,7 @@ const sources = { efa: 0, transitous: 0 };
 
 /** Schlüssel der Einstellungen, die die Bahnhofsauswahl bestimmen. */
 const sideKey = (p: SearchParams) =>
-  JSON.stringify([p.from.place, p.from.radiusKm, p.from.maxStations, p.from.walk, p.from.bike, p.from.car, p.to.place, p.to.radiusKm, p.to.maxStations, p.to.walk, p.to.bike, p.to.car]);
+  JSON.stringify([p.from.place, p.from.radiusKm, p.from.maxStations, p.from.walk, p.from.bike, p.from.car, p.to.place, p.to.radiusKm, p.to.maxStations, p.to.walk, p.to.bike, p.to.car, p.from.bike || p.to.bike ? p.bikeKmh : 0]);
 
 async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
   ctrl?.abort();
@@ -47,7 +47,7 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
 
     if (!opts.keepCandidates || sideKey(p) !== candKey) {
       showStatus('Bahnhöfe im Umkreis und Fahrzeiten dorthin werden ermittelt …', 0.02);
-      const [f, t] = await Promise.all([findCandidates('from', p.from, signal), findCandidates('to', p.to, signal)]);
+      const [f, t] = await Promise.all([findCandidates('from', p.from, p.bikeKmh, signal), findCandidates('to', p.to, p.bikeKmh, signal)]);
       cands = { from: f, to: t };
       candKey = sideKey(p);
       out.hidden = false;
@@ -59,8 +59,8 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
       );
       carDirectMin = undefined;
       accessTimes(p.from.place, [p.to.place], false, 'CAR', signal)
-        .then(([sec]) => {
-          carDirectMin = sec == null ? null : sec / 60;
+        .then(([t]) => {
+          carDirectMin = t == null ? null : t.sec / 60;
           render();
         })
         .catch(() => {
