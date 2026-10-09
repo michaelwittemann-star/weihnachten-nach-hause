@@ -16,7 +16,13 @@ export function initForm(onChange: () => void): void {
   el('date').value = isoDate(today);
   (['from', 'to'] as SideKey[]).forEach((side) => {
     initAutocomplete(side, onChange);
-    for (const m of ['walk', 'bike', 'car']) el(`${side}-${m}`).addEventListener('change', () => syncAccess(side));
+    for (const m of ['walk', 'bike', 'car'])
+      el(`${side}-${m}`).addEventListener('change', (e) => {
+        // Fahrrad und Auto schließen sich aus
+        const box = e.target as HTMLInputElement;
+        if (box.checked && m !== 'walk') el(`${side}-${m === 'bike' ? 'car' : 'bike'}`).checked = false;
+        syncAccess(side);
+      });
     syncAccess(side);
   });
   form.addEventListener('input', onChange);
@@ -141,7 +147,7 @@ function writeSide(side: SideKey, s: SideParams): void {
   el(`${side}-q`).value = s.place.name;
   el(`${side}-r`).value = String(s.radiusKm);
   el(`${side}-walk`).checked = s.walk;
-  el(`${side}-bike`).checked = s.bike;
+  el(`${side}-bike`).checked = s.bike && !s.car; // Fahrrad und Auto schließen sich aus
   el(`${side}-car`).checked = s.car;
   syncAccess(side);
 }
