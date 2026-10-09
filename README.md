@@ -4,13 +4,15 @@ Statische Website: Bahnverbindungen von/zu **allen Bahnhöfen im Umkreis** einer
 Zeitfenster, inklusive Autozeit zum Bahnhof (Abholung, Carsharing). Aufteilung Bahn-/Autozeit,
 D-Ticket-Modus, Karte, Tages-Zeitstrahl, teilbarer Link.
 
+Live: https://michaelwittemann-star.github.io/weihnachten-nach-hause/
+
 ## Entwicklung
 
 ```
 npm install
 npm run dev      # lokal
 npm run build    # Typprüfung + Build nach dist/
-npm run deploy   # Build + Veröffentlichung auf GitHub Pages (gh-pages-Branch)
+npm run deploy   # Build + Veröffentlichung auf GitHub Pages (gh-pages-Branch, ohne Jekyll)
 ```
 
 ## Datenquellen
