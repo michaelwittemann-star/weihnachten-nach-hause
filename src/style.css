@@ -246,6 +246,14 @@ button.primary:hover { background: var(--red-hover); border-color: var(--red-hov
 .ontime { color: var(--ok-ink); font-size: 0.8rem; }
 
 footer { color: var(--muted); font-size: 0.82rem; padding-bottom: 28px; }
+.howto { background: var(--surface-2); border-radius: var(--field-radius); padding: 10px 14px; margin-bottom: 14px; color: var(--text-2); font-size: 0.9rem; }
+.howto summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.howto-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-top: 8px; }
+.howto h3 { margin: 6px 0 4px; }
+.howto ol { margin: 0; padding-left: 20px; }
+.howto li { margin: 2px 0; }
+.howto p { margin: 8px 0 2px; }
+@media (max-width: 600px) { .howto-cols { grid-template-columns: 1fr; } }
 
 /* Handy: Zeitauswahl in einer Zeile – kompakte Felder, Symbole aus (Antippen öffnet die Auswahl) */
 @media (max-width: 600px) {
