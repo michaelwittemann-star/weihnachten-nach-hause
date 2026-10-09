@@ -9,7 +9,7 @@ const WORKERS = 3;
 
 /**
  * Wählt die Bahnhöfe nach tatsächlicher Fahrzeit statt nach Bahnhofsart: Für jeden Kandidaten
- * wird eine Seite Verbindungen ab Fensterbeginn geholt (zur jeweils anderen Seite), daraus die
+ * wird eine Seite Verbindungen ab Fensterbeginn (bei Ankunft: bis Fensterende) geholt (zur jeweils anderen Seite), daraus die
  * schnellste Tür-zu-Tür-Zeit. Gewählt werden alle nahen Bahnhöfe plus die `maxStations` schnellsten.
  * So passt sich die Auswahl der Anreiserichtung an. Schlägt die Probe fehl, bleibt die Vorauswahl.
  */
@@ -19,7 +19,7 @@ export async function probeSelect(
   signal: AbortSignal,
   onProgress: (done: number, total: number) => void,
 ): Promise<void> {
-  const { start } = windowBounds(p);
+  const { start, end } = windowBounds(p);
   const ref = (side: SideKey) => cands[side].find((c) => c.selected && c.door) ?? cands[side].find((c) => c.selected);
 
   const jobs: { side: SideKey; c: Candidate; o: Candidate; d: Candidate }[] = [];
@@ -41,7 +41,8 @@ export async function probeSelect(
     while (next < jobs.length && !signal.aborted) {
       const j = jobs[next++];
       try {
-        const itins = await efaTrips({ from: j.o, to: j.d, time: start + j.o.carSec * 1000, regional: p.dticket, signal });
+        const time = p.arrive ? end - j.d.carSec * 1000 : start + j.o.carSec * 1000;
+        const itins = await efaTrips({ from: j.o, to: j.d, time, regional: p.dticket, arrive: p.arrive, signal });
         const car = (j.o.carSec + j.d.carSec) / 60;
         const best = Math.min(...itins.map((it) => (it.arr - it.dep) / 60000));
         if (Number.isFinite(best)) score.set(j.c, best + car);

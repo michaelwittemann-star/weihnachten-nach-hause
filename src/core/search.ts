@@ -37,18 +37,20 @@ export type Source = 'efa' | 'transitous';
  */
 export async function runTask(task: Task, p: SearchParams, signal: AbortSignal): Promise<{ options: Option[]; source: Source }> {
   const { start, end } = windowBounds(p);
-  const t0 = start + task.o.carSec * 1000;
-  const t1 = end + task.o.carSec * 1000;
+  // Bahnteil: bei Abfahrt ab Bahnhof (Fenster + Autozeit davor), bei Ankunft am Bahnhof (Fenster − Autozeit danach)
+  const shift = p.arrive ? -task.d.carSec * 1000 : task.o.carSec * 1000;
+  const t0 = start + shift;
+  const t1 = end + shift;
   try {
-    const itins = await efaWindow(task, t0, t1, signal);
+    const itins = p.arrive ? await efaWindowArr(task, t0, t1, signal) : await efaWindow(task, t0, t1, signal);
     const ok = itins.filter((it) => minGap(it) >= p.minTransfer);
-    return { options: toOptions(task, ok, start, end, 'efa'), source: 'efa' };
+    return { options: toOptions(task, ok, start, end, p.arrive, 'efa'), source: 'efa' };
   } catch (e) {
     if (signal.aborted) throw e;
     console.warn('EFA nicht verfügbar, nutze Transitous', e);
   }
-  const itins = await transitousWindow(task, p, t0, (end - start) / 1000, signal);
-  return { options: toOptions(task, itins, start, end, 'transitous'), source: 'transitous' };
+  const itins = await transitousWindow(task, p, t0, t1, signal);
+  return { options: toOptions(task, itins, start, end, p.arrive, 'transitous'), source: 'transitous' };
 }
 
 async function efaWindow(task: Task, t0: number, t1: number, signal: AbortSignal): Promise<Itin[]> {
@@ -64,24 +66,48 @@ async function efaWindow(task: Task, t0: number, t1: number, signal: AbortSignal
   return out;
 }
 
-async function transitousWindow(task: Task, p: SearchParams, t0: number, windowSec: number, signal: AbortSignal): Promise<Itin[]> {
+/** Wie efaWindow, aber rückwärts nach Ankunftszeit: vom Fensterende zum Fensteranfang. */
+async function efaWindowArr(task: Task, t0: number, t1: number, signal: AbortSignal): Promise<Itin[]> {
   const out: Itin[] = [];
+  let time = t1;
+  for (let page = 0; page < MAX_EFA_PAGES && time >= t0; page++) {
+    const res = await efaTrips({ from: task.o, to: task.d, time, regional: task.regional, arrive: true, signal });
+    const fresh = res.filter((it) => it.arr <= time + 60 * 60000); // EFA liefert auch etwas spätere Ankünfte
+    out.push(...fresh);
+    const earliest = Math.min(...fresh.map((it) => it.arr));
+    if (!Number.isFinite(earliest) || earliest >= time) break;
+    time = earliest - 60000; // nächste Seite: vor der frühesten Ankunft
+  }
+  return out;
+}
+
+async function transitousWindow(task: Task, p: SearchParams, t0: number, t1: number, signal: AbortSignal): Promise<Itin[]> {
+  const out: Itin[] = [];
+  const windowSec = (t1 - t0) / 1000;
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const res = await plan({
       from: placeOf(task.o),
       to: placeOf(task.d),
-      time: new Date(t0),
+      time: new Date(p.arrive ? t1 : t0), // bei Ankunft: Fenster reicht von time − searchWindow bis time
       windowSec,
       modes: task.regional ? MODES_REGIONAL : MODES_ALL,
       minTransfer: p.minTransfer,
+      arriveBy: p.arrive,
       cursor,
       signal,
     });
     out.push(...res.itins);
-    const lastDep = res.itins.length ? res.itins[res.itins.length - 1].dep : Infinity;
-    if (!res.next || lastDep >= t0 + windowSec * 1000 || res.itins.length === 0) break;
-    cursor = res.next;
+    if (!res.itins.length) break;
+    if (p.arrive) {
+      const earliest = Math.min(...res.itins.map((it) => it.arr));
+      if (!res.prev || earliest <= t0) break;
+      cursor = res.prev;
+    } else {
+      const lastDep = res.itins[res.itins.length - 1].dep;
+      if (!res.next || lastDep >= t1) break;
+      cursor = res.next;
+    }
   }
   return out;
 }
@@ -108,14 +134,16 @@ function trimWalksAtCar(it: Itin, carBefore: boolean, carAfter: boolean): Itin {
   return { ...it, legs, dep: legs[0].dep, arr: legs[legs.length - 1].arr };
 }
 
-function toOptions(task: Task, itins: Itin[], start: number, end: number, source: Source): Option[] {
+function toOptions(task: Task, itins: Itin[], start: number, end: number, arrive: boolean, source: Source): Option[] {
   const { o, d, regional } = task;
   const out: Option[] = [];
   for (const raw of itins) {
     if (!raw.legs.some((l) => l.mode !== 'WALK')) continue; // reine Fußwege
     const itin = trimWalksAtCar(raw, o.carSec > 0, d.carSec > 0);
     const doorDep = itin.dep - o.carSec * 1000;
-    if (doorDep < start || doorDep > end) continue;
+    const doorArr = itin.arr + d.carSec * 1000;
+    const t = arrive ? doorArr : doorDep; // das Fenster gilt für Abfahrt bzw. Ankunft
+    if (t < start || t > end) continue;
     out.push({
       key: `${o.id}|${d.id}|${itin.dep}|${itin.legs.map((l) => l.tripId ?? l.mode).join(',')}`,
       o,
@@ -124,7 +152,7 @@ function toOptions(task: Task, itins: Itin[], start: number, end: number, source
       carOutSec: o.carSec,
       carInSec: d.carSec,
       doorDep,
-      doorArr: itin.arr + d.carSec * 1000,
+      doorArr,
       regionalOnly: regional || itin.legs.every((l) => !isLongDistance(l.mode)),
       source,
     });

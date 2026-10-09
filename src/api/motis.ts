@@ -119,11 +119,13 @@ interface RawItin {
 interface RawPlan {
   itineraries: RawItin[];
   nextPageCursor?: string;
+  previousPageCursor?: string;
 }
 
 export interface PlanPage {
   itins: Itin[];
   next?: string;
+  prev?: string;
 }
 
 const t = (s: string) => new Date(s).getTime();
@@ -157,6 +159,7 @@ export async function plan(opts: {
   windowSec: number;
   modes: string;
   minTransfer: number;
+  arriveBy?: boolean;
   cursor?: string;
   signal?: AbortSignal;
 }): Promise<PlanPage> {
@@ -172,6 +175,7 @@ export async function plan(opts: {
     maxDirectTime: '0',
   };
   if (opts.minTransfer > 0) params.minTransferTime = String(opts.minTransfer);
+  if (opts.arriveBy) params.arriveBy = 'true';
   if (opts.cursor) params.pageCursor = opts.cursor;
   const key = 'plan:' + new URLSearchParams(params).toString();
   const hit = cacheGet<PlanPage>(key);
@@ -185,6 +189,7 @@ export async function plan(opts: {
       legs: it.legs.map(slimLeg),
     })),
     next: raw.nextPageCursor,
+    prev: raw.previousPageCursor,
   };
   cacheSet(key, page);
   return page;

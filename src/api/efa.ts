@@ -112,12 +112,13 @@ function berlinParts(t: number): { date: string; time: string } {
   return { date: `${p.year}${p.month}${p.day}`, time: `${p.hour === '24' ? '00' : p.hour}${p.minute}` };
 }
 
-/** Eine Seite Verbindungen ab Zeitpunkt `time` (bis zu TRIPS_PER_REQUEST Stück). */
+/** Eine Seite Verbindungen ab (bzw. bei `arrive` an) Zeitpunkt `time`, bis zu TRIPS_PER_REQUEST Stück. */
 export async function efaTrips(opts: {
   from: Candidate;
   to: Candidate;
   time: number;
   regional: boolean;
+  arrive?: boolean;
   signal?: AbortSignal;
 }): Promise<Itin[]> {
   const o = efaPlace(opts.from);
@@ -131,7 +132,7 @@ export async function efaTrips(opts: {
     name_destination: d.name,
     itdDate: date,
     itdTime: time,
-    itdTripDateTimeDepArr: 'dep',
+    itdTripDateTimeDepArr: opts.arrive ? 'arr' : 'dep',
     calcNumberOfTrips: String(TRIPS_PER_REQUEST),
     useRealtime: '1',
     coordOutputFormat: 'WGS84[dd.ddddd]',

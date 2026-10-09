@@ -26,6 +26,7 @@ export function paramsToUrl(p: SearchParams): string {
     bis: p.t1,
   });
   if (p.dticket) q.set('dt', '1');
+  if (p.arrive) q.set('an', '1');
   if (p.minTransfer) q.set('mt', String(p.minTransfer));
   return `${location.origin}${location.pathname}?${q}`;
 }
@@ -42,6 +43,7 @@ export function paramsFromUrl(): SearchParams | null {
     t0: q.get('ab') ?? '06:00',
     t1: q.get('bis') ?? '20:00',
     dticket: q.get('dt') === '1',
+    arrive: q.get('an') === '1',
     minTransfer: Number(q.get('mt')) || 0,
   };
 }

@@ -139,7 +139,8 @@ button.primary:hover { background: var(--red-hover); border-color: var(--red-hov
 .access .check { margin-top: 0; }
 .access-label { font-weight: 600; color: var(--text-2); }
 .side.no-car .car-opts { opacity: 0.5; }
-.when { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); align-items: center; }
+.when { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); align-items: center; }
+.when .range { display: inline-flex; align-items: center; gap: 6px; }
 .more { margin-top: 12px; }
 .more summary { cursor: pointer; color: var(--text-2); font-weight: 600; }
 .opts { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
@@ -246,6 +247,17 @@ button.primary:hover { background: var(--red-hover); border-color: var(--red-hov
 
 footer { color: var(--muted); font-size: 0.82rem; padding-bottom: 28px; }
 
+/* Handy: Zeitauswahl in einer Zeile – kompakte Felder, Symbole aus (Antippen öffnet die Auswahl) */
+@media (max-width: 600px) {
+  .when { flex-wrap: nowrap; gap: 4px; }
+  .when select, .when input { padding: 8px 4px; min-width: 0; font-size: 14px; text-align: center; }
+  .when select { flex: none; padding-right: 0; }
+  .when input[type='date'] { flex: 1 1 0; }
+  .when .range { flex: none; gap: 2px; }
+  .when input[type='time'] { width: 3.9em; }
+  .when input::-webkit-calendar-picker-indicator { display: none; }
+  .when input::-webkit-datetime-edit { padding: 0; }
+}
 @media (max-width: 720px) {
   .sides { grid-template-columns: 1fr; }
   .swap { justify-self: center; transform: rotate(90deg); margin-top: 0; }

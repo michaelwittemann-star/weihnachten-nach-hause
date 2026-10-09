@@ -130,6 +130,7 @@ export function readParams(): SearchParams {
     t0: el('t0').value,
     t1: el('t1').value,
     dticket: el('dt').checked,
+    arrive: el<HTMLSelectElement>('mode').value === 'arr',
     minTransfer: Number(el('mt').value) || 0,
   };
 }
@@ -150,6 +151,7 @@ export function writeParams(p: SearchParams): void {
   el('t0').value = p.t0;
   el('t1').value = p.t1;
   el('dt').checked = p.dticket;
+  el<HTMLSelectElement>('mode').value = p.arrive ? 'arr' : 'dep';
   el('mt').value = String(p.minTransfer);
 }
 

@@ -22,6 +22,7 @@ export interface SearchParams {
   t0: string; // HH:MM
   t1: string;
   dticket: boolean;
+  arrive: boolean; // Zeitfenster gilt für die Ankunft statt die Abfahrt
   minTransfer: number;
 }
 

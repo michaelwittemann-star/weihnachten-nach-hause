@@ -58,9 +58,16 @@
       </div>
 
       <div class="when">
-        <label>Datum <input name="date" type="date" required /></label>
-        <label>Abfahrt zwischen <input name="t0" type="time" value="06:00" required /></label>
-        <label>und <input name="t1" type="time" value="20:00" required /></label>
+        <select name="mode" aria-label="Zeitfenster gilt für Abfahrt oder Ankunft">
+          <option value="dep">Abfahrt</option>
+          <option value="arr">Ankunft</option>
+        </select>
+        <input name="date" type="date" required aria-label="Datum" />
+        <span class="range">
+          <input name="t0" type="time" value="06:00" required aria-label="frühestens" />
+          <span aria-hidden="true">–</span>
+          <input name="t1" type="time" value="20:00" required aria-label="spätestens" />
+        </span>
       </div>
 
       <details class="more">
