@@ -30,7 +30,7 @@ export function paramsToUrl(p: SearchParams): string {
   if (p.arrive) q.set('an', '1');
   if (p.minTransfer) q.set('mt', String(p.minTransfer));
   if (p.bikeKmh !== 18) q.set('rad', String(p.bikeKmh));
-  if (!p.nearAll) q.set('n3', '0');
+  if (p.nearAll) q.set('n3', '1');
   return `${location.origin}${location.pathname}?${q}`;
 }
 
@@ -48,7 +48,7 @@ export function paramsFromUrl(): SearchParams | null {
     dticket: q.get('dt') === '1',
     arrive: q.get('an') === '1',
     minTransfer: Number(q.get('mt')) || 0,
-    nearAll: q.get('n3') !== '0',
+    nearAll: q.get('n3') === '1',
     bikeKmh: [15, 18, 22, 25].includes(Number(q.get('rad'))) ? Number(q.get('rad')) : 18,
   };
 }
