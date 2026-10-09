@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weihnachten-nach-Hause-App</title>
+  <meta name="description" content="Bahnverbindungen zu allen Bahnhöfen im Umkreis von Start und Ziel – inklusive Autozeit zum Abholen." />
+  <script type="module" crossorigin src="./assets/index-B-rVvzyW.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DRiy_QZP.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Weihnachten-nach-Hause-App</h1>
+  </header>
+
+  <main>
+    <form id="form" class="card" autocomplete="off">
+      <div class="sides">
+        <fieldset class="side" data-side="from">
+          <legend>Start</legend>
+          <div class="addr">
+            <input name="from-q" type="text" placeholder="Adresse oder Ort" required />
+            <ul class="suggest" hidden></ul>
+          </div>
+          <div class="row access">
+            <span class="access-label">Weg zum Bahnhof:</span>
+            <label class="check" title="zu Fuß zur nächsten Haltestelle (max. 20 min), weiter auch mit Bus/Tram"><input name="from-walk" type="checkbox" checked /> zu Fuß</label>
+            <label class="check"><input name="from-car" type="checkbox" /> Auto</label>
+          </div>
+          <div class="row car-opts">
+            <label>Umkreis <input name="from-r" type="number" min="1" max="60" step="1" value="10" /> km</label>
+          </div>
+        </fieldset>
+
+        <button type="button" id="swap" class="swap" title="Start und Ziel tauschen" aria-label="Start und Ziel tauschen">⇄</button>
+
+        <fieldset class="side" data-side="to">
+          <legend>Ziel</legend>
+          <div class="addr">
+            <input name="to-q" type="text" placeholder="Adresse oder Ort" required />
+            <ul class="suggest" hidden></ul>
+          </div>
+          <div class="row access">
+            <span class="access-label">Weg vom Bahnhof:</span>
+            <label class="check" title="zu Fuß zur nächsten Haltestelle (max. 20 min), weiter auch mit Bus/Tram"><input name="to-walk" type="checkbox" checked /> zu Fuß</label>
+            <label class="check"><input name="to-car" type="checkbox" checked /> Auto</label>
+          </div>
+          <div class="row car-opts">
+            <label>Umkreis <input name="to-r" type="number" min="1" max="60" step="1" value="20" /> km</label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="when">
+        <label>Datum <input name="date" type="date" required /></label>
+        <label>Abfahrt zwischen <input name="t0" type="time" value="06:00" required /></label>
+        <label>und <input name="t1" type="time" value="20:00" required /></label>
+      </div>
+
+      <details class="more">
+        <summary>Optionen</summary>
+        <div class="opts">
+          <label class="check"><input name="dt" type="checkbox" /> nur Nahverkehr (Deutschlandticket)</label>
+          <label>Mindestumstiegszeit <input name="mt" type="number" min="0" max="30" value="0" /> min</label>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="go">Verbindungen suchen</button>
+      </div>
+    </form>
+
+    <section id="status" class="card" hidden>
+      <div class="progress"><div class="bar"></div></div>
+      <div class="status-row">
+        <span id="status-text"></span>
+        <button type="button" id="cancel">Abbrechen</button>
+      </div>
+    </section>
+
+    <section id="out" hidden>
+      <div class="card">
+        <div id="map"></div>
+        <details class="stations-box">
+          <summary>Bahnhöfe im Umkreis <span id="st-count" class="muted"></span></summary>
+          <p class="muted small">Vorausgewählt sind Bahnhöfe unter 3 km und die nach einer Probeabfrage schnellsten (≈ = Schätzung). Häkchen setzen oder entfernen – die Suche läuft sofort neu.</p>
+          <div class="stations">
+            <div><h3>Start</h3><div class="st-scroll"><table id="st-from" class="st-table"></table></div></div>
+            <div><h3>Ziel</h3><div class="st-scroll"><table id="st-to" class="st-table"></table></div></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="res-head">
+          <h2>Verbindungen</h2>
+          <div class="res-controls">
+            <label>Sortieren
+              <select id="sort">
+                <option value="total">Gesamtzeit</option>
+                <option value="transfers">Umstiege</option>
+                <option value="dep">Abfahrt</option>
+                <option value="car">Autozeit</option>
+              </select>
+            </label>
+            <label class="check"><input id="pareto" type="checkbox" checked /> nur sinnvolle</label>
+          </div>
+        </div>
+        <div id="summary" class="summary"></div>
+        <div id="timeline"></div>
+        <ol id="results" class="results"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Verbindungen: <a href="https://www.efa-bw.de/" target="_blank" rel="noopener">EFA-BW / NVBW</a>, ersatzweise
+    <a href="https://transitous.org/sources/" target="_blank" rel="noopener">Transitous und dessen Quellen</a>
+    (u. a. DELFI) · Straßen &amp; Karte: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a>.
+    Angaben ohne Gewähr – vor Fahrtantritt in der DB-App prüfen.
+  </footer>
+
+</body>
+</html>
