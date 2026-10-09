@@ -1,7 +1,7 @@
 import './style.css';
 import { carTimes } from './api/motis';
 import { buildTasks, mergeOptions, runTask, windowBounds, type Task } from './core/search';
-import { byTotal, describeOptions, groupByMainTrip, paretoFilter, sortConns, type Conn, type SortKey } from './core/options';
+import { byTotal, describeOptions, groupByMainTrip, sortConns, type Conn, type SortKey } from './core/options';
 import { probeSelect } from './core/probe';
 import { findCandidates, TIER_LABEL } from './core/stations';
 import type { Candidate, Option, SearchParams, SideKey } from './types';
@@ -157,8 +157,7 @@ function render(): void {
     }
   }
 
-  const pareto = ($<HTMLInputElement>('pareto')).checked;
-  let list = pareto ? paretoFilter(pool) : pool;
+  let list = pool;
   list = groupByMainTrip(list);
   list = sortConns(list, ($<HTMLSelectElement>('sort')).value as SortKey);
 
@@ -276,7 +275,6 @@ document.addEventListener('change', (e) => {
 });
 
 $('sort').addEventListener('change', render);
-$('pareto').addEventListener('change', render);
 let resizeTimer = 0;
 let lastWidth = window.innerWidth;
 window.addEventListener('resize', () => {

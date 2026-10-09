@@ -37,5 +37,5 @@ Alle Abfragen gehen direkt aus dem Browser (CORS offen), ohne eigenen Server:
 - `src/api/` – HTTP mit Drosselung/Retry/Cache je Server, `efa.ts` (Verbindungen), `motis.ts` (Transitous)
 - `src/core/stations.ts` – Bahnhöfe im Umkreis, Rangfolge (Autozeit − 8 min je Verkehrsstufe), gestreute Vorauswahl
 - `src/core/search.ts` – Abfragen je Bahnhofspaar, Zeitfenster, Seitenweise
-- `src/core/options.ts` – Kennzahlen je Verbindung, knappe Umstiege (< 6 min), Pareto-Filter („nur sinnvolle“), Zusammenfassen gleicher Hauptzüge
+- `src/core/options.ts` – Kennzahlen je Verbindung, knappe Umstiege (< 6 min), Zusammenfassen gleicher Hauptzüge (kein Filter – es wird alles gezeigt)
 - `src/ui/` – Formular, Karte (Leaflet/OSM), Zeitstrahl (SVG), Ergebnisliste, URL-Zustand

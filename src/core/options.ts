@@ -40,27 +40,6 @@ export const byTotal = (a: Conn, b: Conn) =>
   a.totalMin - b.totalMin || a.itin.transfers - b.itin.transfers || a.carMin - b.carMin;
 
 /**
- * Entfernt Verbindungen, für die es eine andere gibt, die nicht früher losfährt, nicht später
- * ankommt und nicht mehr Umstiege hat. Die Autozeit ist kein eigener Vorteil – es zählt die Gesamtzeit.
- * Ausnahme: Verbindungen über Bahnhöfe „um die Ecke“ (isNear) bleiben immer.
- */
-export function paretoFilter(list: Conn[]): Conn[] {
-  return list.filter(
-    (a) =>
-      isNear(a) ||
-      !list.some(
-        (b) =>
-          b !== a &&
-          b.doorDep >= a.doorDep &&
-          b.doorArr <= a.doorArr &&
-          b.itin.transfers <= a.itin.transfers &&
-          (b.doorDep > a.doorDep || b.doorArr < a.doorArr || b.itin.transfers < a.itin.transfers ||
-            b.carMin < a.carMin), // bei völligem Gleichstand gewinnt die mit weniger Auto
-      ),
-  );
-}
-
-/**
  * Fasst Verbindungen zusammen, die mit demselben Hauptzug fahren (z. B. ein RE, der mehrere
  * Zielbahnhöfe anfährt). Nur die schnellste Variante bleibt.
  */
