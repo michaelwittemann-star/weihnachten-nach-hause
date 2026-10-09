@@ -23,7 +23,7 @@ let params: SearchParams | null = null;
 let cands: Record<SideKey, Candidate[]> = { from: [], to: [] };
 let candKey = '';
 let options: Option[] = [];
-let carDirectMin: number | null = null;
+let carDirectMin: number | null | undefined; // undefined = wird noch ermittelt, null = nicht ermittelbar
 let ctrl: AbortController | null = null;
 let failed = 0;
 const sources = { efa: 0, transitous: 0 };
@@ -57,13 +57,17 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
       await probeSelect(p, cands, signal, (done, total) =>
         showStatus(`Bahnhöfe werden nach Fahrzeit verglichen: ${done} von ${total}`, 0.05 + 0.25 * (done / total)),
       );
-      carDirectMin = null;
+      carDirectMin = undefined;
       carTimes(p.from.place, [p.to.place], false, signal)
         .then(([sec]) => {
           carDirectMin = sec == null ? null : sec / 60;
           render();
         })
-        .catch(() => undefined);
+        .catch(() => {
+          if (signal.aborted) return;
+          carDirectMin = null;
+          render();
+        });
     }
     out.hidden = false;
     options = [];
@@ -78,15 +82,16 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
     }
     await runPool(tasks, p, signal);
     if (signal.aborted) return;
-    if (p.dticket) {
-      // Vergleich mit Fernverkehr nur für die drei schnellsten Bahnhofspaare – spart Abfragen
+    {
+      // Gegenstück für die Zusammenfassung (schnellste mit/ohne D-Ticket), nur für die drei
+      // schnellsten Bahnhofspaare – spart Abfragen
       const pairs = new Map<string, Task>();
       for (const s of describeOptions(options).sort(byTotal)) {
         if (pairs.size >= 3) break;
         const k = `${s.o.id}|${s.d.id}`;
-        if (!pairs.has(k)) pairs.set(k, { o: s.o, d: s.d, regional: false });
+        if (!pairs.has(k)) pairs.set(k, { o: s.o, d: s.d, regional: !p.dticket });
       }
-      await runPool([...pairs.values()], p, signal, 'Vergleich mit Fernverkehr');
+      await runPool([...pairs.values()], p, signal, p.dticket ? 'Vergleich mit Fernverkehr' : 'Vergleich mit D-Ticket');
       if (signal.aborted) return;
     }
     const failNote = failed ? ` · ${failed} Abfragen fehlgeschlagen` : '';
@@ -163,32 +168,21 @@ function render(): void {
 
   drawMap(p, cands, best, toggleCandidate);
   renderStationTables(best);
-  renderSummary(p, all, pool, list);
+  renderSummary(all, list);
   drawTimeline($('timeline'), list, windowBounds(p).start, focusOption);
   renderResults($<HTMLOListElement>('results'), list);
 }
 
-function renderSummary(p: SearchParams, all: Conn[], pool: Conn[], list: Conn[]): void {
-  const parts: string[] = [];
-  if (!pool.length) {
-    $('summary').innerHTML = carDirectMin && p.from.car ? `<span>Ganz mit dem Auto: <b>${fmtDur(carDirectMin)}</b></span>` : '';
-    return;
-  }
-  const fastest = pool.reduce((a, b) => (b.totalMin < a.totalMin ? b : a));
-  const fewest = Math.min(...pool.map((s) => s.itin.transfers));
-  parts.push(`<span><b>${list.length}</b> Verbindungen</span>`);
-  parts.push(`<span>schnellste: <b>${fmtDur(fastest.totalMin)}</b></span>`);
-  parts.push(`<span>min. Umstiege: <b>${fewest}</b></span>`);
-  if (p.dticket && all.length) {
-    const fastAll = all.reduce((a, b) => (b.totalMin < a.totalMin ? b : a));
-    const diff = fastest.totalMin - fastAll.totalMin;
-    parts.push(
-      diff > 0.5
-        ? `<span>D-Ticket kostet <b>+${fmtDur(diff)}</b> ggü. schnellster mit Fernverkehr (${fmtDur(fastAll.totalMin)})</span>`
-        : '<span>D-Ticket ohne Zeitverlust</span>',
-    );
-  }
-  if (carDirectMin && p.from.car) parts.push(`<span>ganz mit dem Auto: <b>${fmtDur(carDirectMin)}</b></span>`);
+function renderSummary(all: Conn[], list: Conn[]): void {
+  const fastest = (xs: Conn[]) => (xs.length ? fmtDur(Math.min(...xs.map((x) => x.totalMin))) : '–');
+  const car = carDirectMin === undefined ? '…' : carDirectMin === null ? 'nicht ermittelbar' : fmtDur(carDirectMin);
+  const parts = [
+    `<span><b>${list.length}</b> Verbindungen</span>`,
+    `<span>Schnellste: <b>${fastest(all)}</b></span>`,
+    `<span>Schnellste mit D-Ticket: <b>${fastest(all.filter((x) => x.regionalOnly))}</b></span>`,
+    `<span>Nur Auto: <b>${car}</b></span>`,
+  ];
+  if (list.length) parts.push(`<span>min. Umstiege: <b>${Math.min(...list.map((x) => x.itin.transfers))}</b></span>`);
   $('summary').innerHTML = parts.join('');
 }
 
