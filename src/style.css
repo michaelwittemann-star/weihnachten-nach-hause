@@ -250,13 +250,16 @@ footer { color: var(--muted); font-size: 0.82rem; padding-bottom: 28px; }
 /* Handy: Zeitauswahl in einer Zeile – kompakte Felder, Symbole aus (Antippen öffnet die Auswahl) */
 @media (max-width: 600px) {
   .when { flex-wrap: nowrap; gap: 4px; }
-  .when select, .when input { padding: 8px 4px; min-width: 0; font-size: 14px; text-align: center; }
+  /* alle vier Felder gleich hoch; Safari zeichnet Datum/Uhrzeit sonst höher */
+  .when select, .when input { height: 40px; min-height: 0; padding: 0 4px; min-width: 0; font-size: 14px; line-height: 40px; }
+  .when input { -webkit-appearance: none; appearance: none; text-align: center; }
   .when select { flex: none; padding-right: 0; }
-  .when input[type='date'] { flex: 1 1 0; }
+  .when input[type='date'] { flex: none; width: 6.9em; }
   .when .range { flex: none; gap: 2px; }
   .when input[type='time'] { width: 3.9em; }
   .when input::-webkit-calendar-picker-indicator { display: none; }
   .when input::-webkit-datetime-edit { padding: 0; }
+  .when input::-webkit-date-and-time-value { text-align: center; margin: 0; } /* iOS */
 }
 @media (max-width: 720px) {
   .sides { grid-template-columns: 1fr; }
