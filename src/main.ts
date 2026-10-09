@@ -32,7 +32,7 @@ const sources = { efa: 0, transitous: 0 };
 
 /** Schlüssel der Einstellungen, die die Bahnhofsauswahl bestimmen. */
 const sideKey = (p: SearchParams) =>
-  JSON.stringify([p.from.place, p.from.radiusKm, p.from.maxStations, p.from.walk, p.from.bike, p.from.car, p.to.place, p.to.radiusKm, p.to.maxStations, p.to.walk, p.to.bike, p.to.car, p.from.bike || p.to.bike ? p.bikeKmh : 0]);
+  JSON.stringify([p.from.place, p.from.radiusKm, p.from.maxStations, p.from.walk, p.from.bike, p.from.car, p.to.place, p.to.radiusKm, p.to.maxStations, p.to.walk, p.to.bike, p.to.car, p.from.bike || p.to.bike ? p.bikeKmh : 0, p.nearAll]);
 
 async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
   ctrl?.abort();
@@ -47,7 +47,7 @@ async function search(opts: { keepCandidates?: boolean } = {}): Promise<void> {
 
     if (!opts.keepCandidates || sideKey(p) !== candKey) {
       showStatus('Bahnhöfe im Umkreis und Fahrzeiten dorthin werden ermittelt …', 0.02);
-      const [f, t] = await Promise.all([findCandidates('from', p.from, p.bikeKmh, signal), findCandidates('to', p.to, p.bikeKmh, signal)]);
+      const [f, t] = await Promise.all([findCandidates('from', p.from, p.bikeKmh, p.nearAll, signal), findCandidates('to', p.to, p.bikeKmh, p.nearAll, signal)]);
       cands = { from: f, to: t };
       candKey = sideKey(p);
       out.hidden = false;
@@ -163,7 +163,7 @@ function render(): void {
   }
 
   let list = pool;
-  list = groupByMainTrip(list);
+  list = groupByMainTrip(list, p.nearAll);
   list = sortConns(list, ($<HTMLSelectElement>('sort')).value as SortKey);
 
   drawMap(p, cands, best, toggleCandidate);
@@ -199,7 +199,7 @@ function renderStationTables(best: Map<string, Conn>): void {
           `<tr class="${c.selected ? 'on' : ''}"><td><input type="checkbox" class="st-check" data-side="${side}" data-i="${i}"` +
           `${c.selected ? ' checked' : ''} aria-label="${esc(c.name)} verwenden"></td>` +
           `<td>${esc(c.name)}</td><td class="muted">${c.door ? 'zu Fuß/Bus' : TIER_LABEL[c.tier]}</td>` +
-          `<td class="num">${c.door ? '–' : `${fmtDur(c.accessSec / 60)} <span class="muted">${ACCESS_LABEL[c.access]}</span>`}</td>` +
+          `<td class="num">${c.door ? '–' : `${c.accessEstimated ? '<span title="kein Weg gefunden – aus der Luftlinie geschätzt">≈</span>' : ''}${fmtDur(c.accessSec / 60)} <span class="muted">${ACCESS_LABEL[c.access]}</span>`}</td>` +
           `<td class="num muted">${c.door ? '–' : `${c.distKm.toFixed(1).replace('.', ',')} km`}</td>` +
           `<td class="num">${
             b

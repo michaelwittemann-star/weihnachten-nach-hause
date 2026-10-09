@@ -47,7 +47,9 @@ export function doorCandidate(place: Place): Candidate {
  * Alle Bahnhöfe im Umkreis mit Zubringerzeit – je gewähltem Fahrzeug (Auto, Fahrrad) ein Eintrag.
  * Die besten `maxStations` (Zubringerzeit minus Bonus für Fern-/Regionalverkehr) sind vorausgewählt.
  */
-export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: number, signal?: AbortSignal): Promise<Candidate[]> {
+export async function findCandidates(
+  side: SideKey, p: SideParams, bikeKmh: number, nearAll: boolean, signal?: AbortSignal,
+): Promise<Candidate[]> {
   const door = doorCandidate(p.place);
   const base = p.walk ? [door] : [];
   if ((!p.car && !p.bike) || p.radiusKm <= 0) return base;
@@ -77,8 +79,8 @@ export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: numb
   for (const access of vehicles) {
     const times = await accessTimes(p.place, pool.map((x) => x.s), side === 'to', access === 'car' ? 'CAR' : 'BIKE', signal);
     pool.forEach((x, i) => {
-      const t = times[i];
-      if (t == null) return;
+      // Kein Weg gefunden (z. B. Bahnhofspunkt mitten im Baufeld): aus der Luftlinie schätzen statt verwerfen
+      const t = times[i] ?? estimateAccess(x.d, access);
       const sec = access === 'bike' ? bikeSeconds(t, bikeKmh) : t.sec;
       cands.push({
         id: `${access}:${x.s.stopId}`,
@@ -90,6 +92,7 @@ export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: numb
         distKm: x.d,
         access,
         accessSec: sec,
+        accessEstimated: times[i] == null,
         door: false,
         selected: false,
         placeName: p.place.name,
@@ -98,7 +101,7 @@ export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: numb
   }
   cands.sort((a, b) => rankMin(a) - rankMin(b));
   // Vorauswahl räumlich streuen: kein Halt direkt neben einem schon gewählten, gleichwertigen.
-  // Nahe Bahnhöfe (< NEAR_KM) kommen immer dazu und zählen nicht gegen maxStations.
+  // Mit nearAll kommen nahe Bahnhöfe (< NEAR_KM) immer dazu und zählen nicht gegen maxStations.
   const picked: Candidate[] = [];
   const pick = (c: Candidate) => {
     if (c.selected || picked.some((q) => q.access === c.access && q.tier >= c.tier && distKm(q, c) < SPREAD_KM)) return false;
@@ -106,11 +109,12 @@ export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: numb
     picked.push(c);
     return true;
   };
-  cands.filter((c) => c.distKm < NEAR_KM).forEach(pick);
+  const isNearC = (c: Candidate) => nearAll && c.distKm < NEAR_KM;
+  cands.filter(isNearC).forEach(pick);
   let far = 0;
   for (const c of cands) {
     if (far >= p.maxStations) break;
-    if (c.distKm >= NEAR_KM && pick(c)) far++;
+    if (!isNearC(c) && pick(c)) far++;
   }
   return [...base, ...cands];
 }
@@ -119,6 +123,12 @@ export async function findCandidates(side: SideKey, p: SideParams, bikeKmh: numb
 const TRANSITOUS_BIKE_KMH = 14.5;
 function bikeSeconds(t: AccessTime, kmh: number): number {
   return t.m != null ? t.m / (kmh / 3.6) : (t.sec * TRANSITOUS_BIKE_KMH) / kmh;
+}
+
+/** Schätzung aus der Luftlinie: Straße ca. ein Drittel länger, Auto im Schnitt 30 km/h plus 2 min. */
+function estimateAccess(km: number, access: 'car' | 'bike'): AccessTime {
+  const m = km * 1000 * 1.35;
+  return { m, sec: access === 'car' ? m / (30 / 3.6) + 120 : m / (TRANSITOUS_BIKE_KMH / 3.6) };
 }
 
 /** Grobe Rangfolge ohne Fahrplan: Zubringerzeit minus Bonus je Verkehrsstufe. */

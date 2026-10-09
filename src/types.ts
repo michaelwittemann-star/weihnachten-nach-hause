@@ -29,6 +29,7 @@ export interface SearchParams {
   arrive: boolean; // Zeitfenster gilt für die Ankunft statt die Abfahrt
   minTransfer: number;
   bikeKmh: number; // angenommenes Fahrradtempo
+  nearAll: boolean; // alle Bahnhöfe < 3 km immer abfragen und einzeln zeigen
 }
 
 /** Ein Bahnhof im Umkreis (oder die Adresse selbst, `door`). */
@@ -41,6 +42,7 @@ export interface Candidate {
   distKm: number;
   access: Access; // Zubringer: Auto, Fahrrad oder (bei door) zu Fuß
   accessSec: number; // Zubringerzeit Adresse <-> Bahnhof
+  accessEstimated?: boolean; // Zeit nur aus Luftlinie geschätzt (kein Weg gefunden)
   door: boolean;
   selected: boolean;
   stopId?: string; // Haltestellen-ID (bei door nur, wenn der eingegebene Ort eine Haltestelle ist)

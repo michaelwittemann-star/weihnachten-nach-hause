@@ -140,6 +140,7 @@ export function readParams(): SearchParams {
     arrive: el<HTMLSelectElement>('mode').value === 'arr',
     minTransfer: Number(el('mt').value) || 0,
     bikeKmh: Number(el<HTMLSelectElement>('bk').value) || 18,
+    nearAll: el('n3').checked,
   };
 }
 
@@ -163,6 +164,7 @@ export function writeParams(p: SearchParams): void {
   el<HTMLSelectElement>('mode').value = p.arrive ? 'arr' : 'dep';
   el('mt').value = String(p.minTransfer);
   el<HTMLSelectElement>('bk').value = String(p.bikeKmh);
+  el('n3').checked = p.nearAll;
 }
 
 /** Start und Ziel samt Umkreis-Einstellungen tauschen. */

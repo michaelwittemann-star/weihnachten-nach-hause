@@ -77,6 +77,7 @@
         <div class="opts">
           <label class="check"><input name="dt" type="checkbox" /> nur Nahverkehr (Deutschlandticket)</label>
           <label>Mindestumstiegszeit <input name="mt" type="number" min="0" max="30" value="0" /> min</label>
+          <label class="check"><input name="n3" type="checkbox" checked /> alle Bahnhöfe im Umkreis von 3 km berücksichtigen</label>
           <label>Fahrradtempo
             <select name="bk">
               <option value="15">gemütlich (15 km/h)</option>
@@ -106,7 +107,7 @@
         <div id="map"></div>
         <details class="stations-box">
           <summary>Bahnhöfe im Umkreis <span id="st-count" class="muted"></span></summary>
-          <p class="muted small">Vorausgewählt sind Bahnhöfe unter 3 km und die nach einer Probeabfrage schnellsten (≈ = Schätzung). Häkchen setzen oder entfernen – die Suche läuft sofort neu.</p>
+          <p class="muted small">Vorausgewählt sind die nach einer Probeabfrage schnellsten Bahnhöfe (und, falls unter Optionen angehakt, alle unter 3 km) (≈ = Schätzung). Häkchen setzen oder entfernen – die Suche läuft sofort neu.</p>
           <div class="stations">
             <div><h3>Start</h3><div class="st-scroll"><table id="st-from" class="st-table"></table></div></div>
             <div><h3>Ziel</h3><div class="st-scroll"><table id="st-to" class="st-table"></table></div></div>

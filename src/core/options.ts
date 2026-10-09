@@ -47,13 +47,13 @@ export const byTotal = (a: Conn, b: Conn) =>
  * Fasst Verbindungen zusammen, die mit demselben Hauptzug fahren (z. B. ein RE, der mehrere
  * Zielbahnhöfe anfährt). Nur die schnellste Variante bleibt.
  */
-export function groupByMainTrip(list: Conn[]): Conn[] {
+export function groupByMainTrip(list: Conn[], nearAll: boolean): Conn[] {
   const groups = new Map<string, Conn[]>();
   for (const s of list) {
     const tl = transitLegs(s.itin.legs);
     const main = tl.reduce((a, b) => (b.arr - b.dep > a.arr - a.dep ? b : a), tl[0]);
     // Nahe Verbindungen nie unter einer anderen verstecken
-    const k = main && !isNear(s) ? `${main.tripId ?? main.line}@${main.dep}` : s.key;
+    const k = main && !(nearAll && isNear(s)) ? `${main.tripId ?? main.line}@${main.dep}` : s.key;
     const g = groups.get(k);
     if (g) g.push(s);
     else groups.set(k, [s]);
